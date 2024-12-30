@@ -8,7 +8,7 @@ COPY go.mod ./
 
 RUN go mod download
 
-COPY . ./
+COPY Dockerfile main_test.go main.go ./
 
 RUN set -x && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     --no-install-recommends \

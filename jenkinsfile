@@ -2,51 +2,53 @@ pipeline {
     agent any
 
     environment {
-        TAG = sh(script: 'git describe --abbrev=0',,returnStdout: true).trim()
+        TAG = sh(script: 'git describe --abbrev=0', returnStdout: true).trim()
     }
 
     stages {
-
-         stage('Checkout') {
+        stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
-        stage('build docker image'){
-        steps{
-            sh 'docker build -t go-hello/app:${TAG} .'
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t go-hello/app:${TAG} .'
             }
         }
 
-        stage('sleep for container deploy'){
-        steps{
-            sh 'sleep 10'
-            }
-        }
-
-        stage('Sonarqube validation'){
-            steps{
-                script{
-                    scannerHome = tool 'sonar-scanner';
+        stage('Run Tests and Generate Coverage') {
+            steps {
+                script {
+                    sh 'go test -coverprofile=coverage.out'
+                    sh 'go tool cover -html=coverage.out -o coverage.lcov'
                 }
-                withSonarQubeEnv('sonar-server'){
-                    sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=go-hello -Dsonar.sources=. -Dsonar.host.url=${env.SONAR_HOST_URL} -Dsonar.token=${env.SONAR_AUTH_TOKEN} -X"
+            }
+        }
+
+        stage('SonarQube Validation') {
+            steps {
+                script {
+                    scannerHome = tool 'sonar-scanner'
+                }
+                withSonarQubeEnv('sonar-server') {
+                    sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=go-hello -Dsonar.sources=. -Dsonar.host.url=${env.SONAR_HOST_URL} -Dsonar.token=${env.SONAR_AUTH_TOKEN} -Dsonar.go.coverage.reportPaths=coverage.lcov -X"
                 }
                 sh 'sleep 10'
             }
         }
 
-        stage("Quality Gate"){
-            steps{
+        stage("Quality Gate") {
+            steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
         }
 
-        stage('Upload docker image'){
-            steps{
+        stage('Upload Docker Image') {
+            steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'nexus-user', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                         sh 'docker login -u $USERNAME -p $PASSWORD ${NEXUS_URL}'
@@ -57,8 +59,8 @@ pipeline {
             }
         }
 
-        stage("Apply kubernetes files"){
-            steps{
+        stage("Apply Kubernetes Files") {
+            steps {
                 sh '/usr/local/bin/kubectl apply -f ./kubernetes/go-hello.yaml'
             }
         }

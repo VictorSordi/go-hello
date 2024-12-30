@@ -21,17 +21,15 @@ spec:
           requests:
             memory: "64Mi"
             cpu: "100m"
+            ephemeral-storage: "2Gi"
           limits:
             memory: "128Mi"
             cpu: "500m"
+            ephemeral-storage: "4Gi"
         ports:
         - containerPort: 8080
-        volumeMounts:
-        - mountPath: /data 
-          name: go-hello-storage  
-  volumes:
-    - name: go-hello-storage  
-      emptyDir: {}
+
+
 ---
 
 apiVersion: v1

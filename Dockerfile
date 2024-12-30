@@ -8,16 +8,17 @@ RUN useradd -m -s /bin/bash gouser
 WORKDIR /app
 
 # Copiar os arquivos de modulos do Go
-COPY go.* ./
+COPY go.mod ./
 
 # Baixar as dependências do Go
 RUN go mod download
 
 # Copiar o restante do código-fonte da aplicação para dentro do container
-COPY . ./
+COPY main_test.go main.go Dockerfile ./
 
 # Instalar dependências e compilar a aplicação Go
 RUN set -x && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    --no-install-recommends \
     ca-certificates && \
     rm -rf /var/lib/apt/lists/* && \
     go build -v -o server

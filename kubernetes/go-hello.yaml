@@ -13,6 +13,7 @@ spec:
       labels:
         app: go-hello
     spec:
+      automountServiceAccountToken: false
       containers:
       - name: go-hello
         image: go-hello/app:v1.0.0
